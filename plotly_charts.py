@@ -22,7 +22,7 @@ def build_candlestick_figure(df: pd.DataFrame, ticker: str) -> go.Figure:
         subplot_titles.append("MACD")
 
     fig = make_subplots(
-        rows=rows, cols=1, shared_xaxes=True, vertical_spacing=0.04,
+        rows=rows, cols=1, shared_xaxes=True, vertical_spacing=0.1,
         row_heights=row_heights, subplot_titles=subplot_titles,
     )
 
@@ -52,11 +52,15 @@ def build_candlestick_figure(df: pd.DataFrame, ticker: str) -> go.Figure:
 
     fig.update_layout(
         title=f"{ticker} 走勢圖",
-        height=250 * rows,
+        height=280 * rows,
         xaxis_rangeslider_visible=False,
         showlegend=True,
         margin=dict(t=60, b=30),
     )
+
+    # 每個面板都顯示日期刻度，不要只靠 shared_xaxes 預設把日期擠在最下面那格
+    fig.update_xaxes(showticklabels=True, tickformat="%Y-%m-%d", tickangle=0, tickfont=dict(size=10))
+
     return fig
 
 
@@ -74,4 +78,5 @@ def build_comparison_figure(price_dict: dict, title: str = "股價報酬率比�
         height=550,
         margin=dict(t=60, b=30),
     )
+    fig.update_xaxes(tickformat="%Y-%m-%d", tickangle=-30, nticks=15, showgrid=True)
     return fig
