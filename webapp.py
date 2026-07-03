@@ -180,7 +180,7 @@ with tab_analyze:
 
             if not revenue.empty:
                 st.subheader("近幾季營收")
-                st.bar_chart(revenue.tail(8))
+                st.line_chart(revenue.tail(8))
 
         except Exception as e:
             st.error(f"發生錯誤：{e}")
