@@ -20,7 +20,7 @@ from data_fetcher import (
     normalize_ticker,
 )
 from indicators import add_all_indicators
-from plotly_charts import build_candlestick_html, build_comparison_figure
+from plotly_charts import build_candlestick_html, build_comparison_figure, build_revenue_figure
 
 st.set_page_config(page_title="股票走勢分析", layout="wide")
 
@@ -180,7 +180,7 @@ with tab_analyze:
 
             if not revenue.empty:
                 st.subheader("近幾季營收")
-                st.line_chart(revenue.tail(8))
+                st.plotly_chart(build_revenue_figure(revenue.tail(8)), use_container_width=True)
 
         except Exception as e:
             st.error(f"發生錯誤：{e}")
