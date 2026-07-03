@@ -2,3 +2,6 @@ yfinance
 mplfinance
 pandas
 matplotlib
+streamlit
+plotly
+streamlit-autorefresh
