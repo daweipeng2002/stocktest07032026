@@ -9,6 +9,7 @@
 
 import pandas as pd
 import streamlit as st
+import streamlit.components.v1 as components
 from streamlit_autorefresh import st_autorefresh
 
 from data_fetcher import (
@@ -19,7 +20,7 @@ from data_fetcher import (
     normalize_ticker,
 )
 from indicators import add_all_indicators
-from plotly_charts import build_candlestick_figure, build_comparison_figure
+from plotly_charts import build_candlestick_html, build_comparison_figure
 
 st.set_page_config(page_title="股票走勢分析", layout="wide")
 
@@ -169,8 +170,8 @@ with tab_analyze:
             if extended:
                 st.caption(extended)
 
-            fig = build_candlestick_figure(df, ticker)
-            st.plotly_chart(fig, use_container_width=True)
+            chart_html, chart_height = build_candlestick_html(df, ticker)
+            components.html(chart_html, height=chart_height + 40, scrolling=False)
 
             st.subheader("基本面摘要")
             info_cols = st.columns(4)
@@ -207,4 +208,4 @@ with tab_compare:
 
         if price_dict:
             fig = build_comparison_figure(price_dict)
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, use_container_width=True, config={"scrollZoom": True})
