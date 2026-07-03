@@ -157,15 +157,13 @@ with tab_analyze:
             change = latest["Close"] - prev_close
             change_pct = change / prev_close * 100 if prev_close else 0
 
-            m1, m2, m3, m4 = st.columns(4)
+            m1, m2 = st.columns(2)
             is_tw_stock = ticker.endswith((".TW", ".TWO"))
             m1.metric(
                 "最新收盤價", f"{latest['Close']:.2f}", f"{change:+.2f} ({change_pct:+.2f}%)",
                 delta_color="inverse" if is_tw_stock else "normal",  # 台股慣例：紅漲綠跌
             )
-            m2.metric("RSI(14)", f"{latest['RSI']:.1f}" if not pd.isna(latest.get("RSI")) else "N/A")
-            m3.metric("MACD", f"{latest['MACD']:.3f}" if not pd.isna(latest.get("MACD")) else "N/A")
-            m4.metric("成交量", f"{latest['Volume']:,.0f}")
+            m2.metric("成交量", f"{latest['Volume']:,.0f}")
 
             extended = format_extended_caption(ticker)
             if extended:

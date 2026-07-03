@@ -6,24 +6,16 @@ from plotly.subplots import make_subplots
 
 
 def build_candlestick_figure(df: pd.DataFrame, ticker: str) -> go.Figure:
-    has_rsi = "RSI" in df.columns
-    has_macd = "MACD" in df.columns
-
     # 台股慣例：紅漲綠跌；其他市場（美股等）維持國際慣例：綠漲紅跌
     is_tw_stock = ticker.endswith((".TW", ".TWO"))
     up_color, down_color = ("red", "green") if is_tw_stock else ("green", "red")
 
-    rows = 2 + int(has_rsi) + int(has_macd)
-    row_heights = [0.5, 0.15] + [0.15] * (rows - 2)
-    subplot_titles = ["K線與均線", "成交量"]
-    if has_rsi:
-        subplot_titles.append("RSI")
-    if has_macd:
-        subplot_titles.append("MACD")
+    rows = 2
+    row_heights = [0.7, 0.3]
 
     fig = make_subplots(
         rows=rows, cols=1, shared_xaxes=True, vertical_spacing=0.1,
-        row_heights=row_heights, subplot_titles=subplot_titles,
+        row_heights=row_heights, subplot_titles=["K線與均線", "成交量"],
     )
 
     fig.add_trace(go.Candlestick(
@@ -36,19 +28,6 @@ def build_candlestick_figure(df: pd.DataFrame, ticker: str) -> go.Figure:
 
     vol_colors = [up_color if c >= o else down_color for o, c in zip(df["Open"], df["Close"])]
     fig.add_trace(go.Bar(x=df.index, y=df["Volume"], name="成交量", marker_color=vol_colors), row=2, col=1)
-
-    next_row = 3
-    if has_rsi:
-        fig.add_trace(go.Scatter(x=df.index, y=df["RSI"], name="RSI", line=dict(color="purple")), row=next_row, col=1)
-        fig.add_hline(y=70, line_dash="dash", line_color="grey", row=next_row, col=1)
-        fig.add_hline(y=30, line_dash="dash", line_color="grey", row=next_row, col=1)
-        next_row += 1
-
-    if has_macd:
-        fig.add_trace(go.Scatter(x=df.index, y=df["MACD"], name="MACD", line=dict(color="blue")), row=next_row, col=1)
-        fig.add_trace(go.Scatter(x=df.index, y=df["MACD_signal"], name="訊號線", line=dict(color="orange")), row=next_row, col=1)
-        hist_colors = ["red" if v >= 0 else "green" for v in df["MACD_hist"]]
-        fig.add_trace(go.Bar(x=df.index, y=df["MACD_hist"], name="MACD柱狀圖", marker_color=hist_colors), row=next_row, col=1)
 
     fig.update_layout(
         title=f"{ticker} 走勢圖",
