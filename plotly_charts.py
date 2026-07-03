@@ -15,7 +15,7 @@ def build_candlestick_figure(df: pd.DataFrame, ticker: str) -> go.Figure:
 
     fig = make_subplots(
         rows=rows, cols=1, shared_xaxes=True, vertical_spacing=0.1,
-        row_heights=row_heights, subplot_titles=["K線與均線", "成交量"],
+        row_heights=row_heights, subplot_titles=["K線", "成交量"],
     )
 
     fig.add_trace(go.Candlestick(
@@ -23,22 +23,21 @@ def build_candlestick_figure(df: pd.DataFrame, ticker: str) -> go.Figure:
         name="K線", increasing_line_color=up_color, decreasing_line_color=down_color,
     ), row=1, col=1)
 
-    for col in [c for c in df.columns if c.startswith("SMA")]:
-        fig.add_trace(go.Scatter(x=df.index, y=df[col], name=col, line=dict(width=1.2)), row=1, col=1)
-
     vol_colors = [up_color if c >= o else down_color for o, c in zip(df["Open"], df["Close"])]
     fig.add_trace(go.Bar(x=df.index, y=df["Volume"], name="成交量", marker_color=vol_colors), row=2, col=1)
 
     fig.update_layout(
         title=f"{ticker} 走勢圖",
-        height=280 * rows,
-        xaxis_rangeslider_visible=False,
+        height=280 * rows + 60,
+        dragmode="pan",  # 直接在圖上拖曳就能左右滑動，不用先點工具列
         showlegend=True,
         margin=dict(t=60, b=30),
     )
 
     # 每個面板都顯示日期刻度，不要只靠 shared_xaxes 預設把日期擠在最下面那格
     fig.update_xaxes(showticklabels=True, tickformat="%Y-%m-%d", tickangle=0, tickfont=dict(size=10))
+    # 最下面那格加上拖曳條，方便快速選取想看的歷史區間
+    fig.update_xaxes(rangeslider_visible=True, rangeslider_thickness=0.06, row=rows, col=1)
 
     return fig
 
@@ -54,8 +53,12 @@ def build_comparison_figure(price_dict: dict, title: str = "股價報酬率比�
     fig.update_layout(
         title=title,
         yaxis_title="相對報酬率（起點=100）",
-        height=550,
+        height=600,
+        dragmode="pan",  # 直接在圖上拖曳就能左右滑動，不用先點工具列
         margin=dict(t=60, b=30),
     )
-    fig.update_xaxes(tickformat="%Y-%m-%d", tickangle=-30, nticks=15, showgrid=True)
+    fig.update_xaxes(
+        tickformat="%Y-%m-%d", tickangle=-30, nticks=15, showgrid=True,
+        rangeslider_visible=True, rangeslider_thickness=0.06,
+    )
     return fig
