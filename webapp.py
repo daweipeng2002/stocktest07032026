@@ -17,6 +17,9 @@ from plotly_charts import build_candlestick_figure, build_comparison_figure
 
 st.set_page_config(page_title="股票走勢分析", layout="wide")
 
+WATCHLIST = ["MRVL", "ARM", "TSLA", "SPCX", "CRWV", "MU"]
+INDEXES = {"^SOX": "費城半導體指數", "^IXIC": "那斯達克指數", "^DJI": "道瓊工業指數"}
+
 
 @st.cache_data(ttl=60, show_spinner=False)
 def cached_history(ticker: str, period: str, interval: str):
@@ -35,12 +38,64 @@ def cached_revenue(ticker: str):
 
 st.title("📈 股票走勢分析")
 
+index_header_col, index_toggle_col, index_interval_col = st.columns([2, 1, 1])
+with index_header_col:
+    st.subheader("🌎 大盤指數即時追蹤")
+with index_toggle_col:
+    index_auto_refresh = st.checkbox("自動刷新", value=True, key="index_auto_refresh")
+with index_interval_col:
+    index_refresh_seconds = st.number_input(
+        "刷新間隔（秒）", min_value=15, max_value=600, value=30, step=15,
+        disabled=not index_auto_refresh, key="index_refresh_seconds",
+    )
+
+if index_auto_refresh:
+    st_autorefresh(interval=index_refresh_seconds * 1000, key="index_autorefresh")
+
+index_cols = st.columns(len(INDEXES))
+for col, (symbol, name) in zip(index_cols, INDEXES.items()):
+    with col:
+        try:
+            idx_df = cached_history(symbol, "5d", "1d")
+            idx_last = idx_df["Close"].iloc[-1]
+            idx_prev = idx_df["Close"].iloc[-2] if len(idx_df) > 1 else idx_last
+            idx_change = idx_last - idx_prev
+            idx_change_pct = idx_change / idx_prev * 100 if idx_prev else 0
+            col.metric(name, f"{idx_last:,.2f}", f"{idx_change:+.2f} ({idx_change_pct:+.2f}%)")
+        except Exception as e:
+            col.metric(name, "N/A")
+            col.caption(f"抓取失敗：{e}")
+
+st.divider()
+
 tab_analyze, tab_compare = st.tabs(["個股分析", "多檔比較"])
 
+if "ticker_input" not in st.session_state:
+    st.session_state.ticker_input = WATCHLIST[0]
+
 with tab_analyze:
+    st.caption("⭐ 自選股快速切換")
+    watch_cols = st.columns(len(WATCHLIST))
+    for i, wt in enumerate(WATCHLIST):
+        with watch_cols[i]:
+            try:
+                wt_df = cached_history(normalize_ticker(wt), "5d", "1d")
+                wt_last = wt_df["Close"].iloc[-1]
+                wt_prev = wt_df["Close"].iloc[-2] if len(wt_df) > 1 else wt_last
+                wt_change_pct = (wt_last - wt_prev) / wt_prev * 100 if wt_prev else 0
+                st.metric(wt, f"{wt_last:.2f}", f"{wt_change_pct:+.2f}%")
+            except Exception:
+                st.metric(wt, "N/A")
+            if st.button("查看", key=f"select_{wt}", use_container_width=True):
+                st.session_state.ticker_input = wt
+                st.rerun()
+
     col1, col2, col3, col4 = st.columns([2, 1, 1, 2])
     with col1:
-        ticker_input = st.text_input("股票代號", value="2330", help="台股輸入純數字會自動補 .TW，例如 2330；美股直接輸入 AAPL")
+        ticker_input = st.text_input(
+            "股票代號", key="ticker_input",
+            help="台股輸入純數字會自動補 .TW，例如 2330；美股直接輸入 AAPL",
+        )
     with col2:
         period = st.selectbox("資料期間", ["1mo", "3mo", "6mo", "1y", "2y", "5y"], index=3)
     with col3:
@@ -94,7 +149,7 @@ with tab_analyze:
             st.error(f"發生錯誤：{e}")
 
 with tab_compare:
-    tickers_input = st.text_input("多個股票代號（用空格或逗號分隔）", value="2330 0050 AAPL")
+    tickers_input = st.text_input("多個股票代號（用空格或逗號分隔）", value=" ".join(WATCHLIST))
     compare_period = st.selectbox("資料期間", ["3mo", "6mo", "1y", "2y", "5y"], index=2, key="compare_period")
 
     if tickers_input:
