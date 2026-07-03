@@ -29,6 +29,9 @@ def build_candlestick_figure(df: pd.DataFrame, ticker: str) -> go.Figure:
     fig.add_trace(go.Bar(x=df.index, y=df["Volume"], name="成交量", marker_color=vol_colors), row=2, col=1)
 
     fig.update_layout(
+        template="plotly_dark",
+        paper_bgcolor="#0e1117",
+        plot_bgcolor="#0e1117",
         title=dict(text=f"{ticker} 走勢圖", font=dict(size=22)),
         height=480 * rows + 80,
         dragmode="pan",  # 直接在圖上拖曳就能左右滑動，不用先點工具列
@@ -70,6 +73,9 @@ def build_candlestick_html(df: pd.DataFrame, ticker: str):
         include_plotlyjs="cdn", full_html=False, div_id=div_id,
         config={"scrollZoom": True},
     )
+    # 避免 iframe 邊緣或載入瞬間露出 Plotly 預設的白底
+    body_style = '<style>html, body { background-color: #0e1117; margin: 0; }</style>'
+    plot_html = body_style + plot_html
 
     autoscale_js = f"""
     <script>
@@ -134,6 +140,9 @@ def build_comparison_figure(price_dict: dict, title: str = "股價報酬率比�
 
     fig.add_hline(y=100, line_dash="dash", line_color="grey")
     fig.update_layout(
+        template="plotly_dark",
+        paper_bgcolor="#0e1117",
+        plot_bgcolor="#0e1117",
         title=dict(text=title, font=dict(size=22)),
         yaxis_title="相對報酬率（起點=100）",
         height=750,
