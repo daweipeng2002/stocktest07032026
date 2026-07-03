@@ -11,7 +11,13 @@ import pandas as pd
 import streamlit as st
 from streamlit_autorefresh import st_autorefresh
 
-from data_fetcher import get_fundamentals, get_history, get_quarterly_revenue, normalize_ticker
+from data_fetcher import (
+    get_extended_hours_quote,
+    get_fundamentals,
+    get_history,
+    get_quarterly_revenue,
+    normalize_ticker,
+)
 from indicators import add_all_indicators
 from plotly_charts import build_candlestick_figure, build_comparison_figure
 
@@ -34,6 +40,31 @@ def cached_fundamentals(ticker: str):
 @st.cache_data(ttl=300, show_spinner=False)
 def cached_revenue(ticker: str):
     return get_quarterly_revenue(ticker)
+
+
+@st.cache_data(ttl=30, show_spinner=False)
+def cached_extended_quote(ticker: str):
+    return get_extended_hours_quote(ticker)
+
+
+def format_extended_caption(ticker: str) -> str:
+    """回傳盤前／盤後報價的顯示文字；沒有資料（例如台股、或不在盤前盤後時段）就回傳空字串。"""
+    try:
+        quote = cached_extended_quote(ticker)
+    except Exception:
+        return ""
+
+    if quote.get("pre_price") is not None:
+        chg = quote.get("pre_change") or 0
+        chg_pct = quote.get("pre_change_percent") or 0
+        return f"🌤️ 盤前 {quote['pre_price']:.2f}（{chg:+.2f}, {chg_pct:+.2f}%）"
+
+    if quote.get("post_price") is not None:
+        chg = quote.get("post_change") or 0
+        chg_pct = quote.get("post_change_percent") or 0
+        return f"🌙 盤後 {quote['post_price']:.2f}（{chg:+.2f}, {chg_pct:+.2f}%）"
+
+    return ""
 
 
 st.title("📈 股票走勢分析")
@@ -84,6 +115,9 @@ with tab_analyze:
                 wt_prev = wt_df["Close"].iloc[-2] if len(wt_df) > 1 else wt_last
                 wt_change_pct = (wt_last - wt_prev) / wt_prev * 100 if wt_prev else 0
                 st.metric(wt, f"{wt_last:.2f}", f"{wt_change_pct:+.2f}%")
+                extended = format_extended_caption(normalize_ticker(wt))
+                if extended:
+                    st.caption(extended)
             except Exception:
                 st.metric(wt, "N/A")
             if st.button("查看", key=f"select_{wt}", use_container_width=True):
@@ -132,6 +166,10 @@ with tab_analyze:
             m2.metric("RSI(14)", f"{latest['RSI']:.1f}" if not pd.isna(latest.get("RSI")) else "N/A")
             m3.metric("MACD", f"{latest['MACD']:.3f}" if not pd.isna(latest.get("MACD")) else "N/A")
             m4.metric("成交量", f"{latest['Volume']:,.0f}")
+
+            extended = format_extended_caption(ticker)
+            if extended:
+                st.caption(extended)
 
             fig = build_candlestick_figure(df, ticker)
             st.plotly_chart(fig, use_container_width=True)

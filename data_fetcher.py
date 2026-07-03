@@ -63,6 +63,26 @@ def get_fundamentals(ticker: str) -> dict:
     }
 
 
+def get_extended_hours_quote(ticker: str) -> dict:
+    """
+    取得盤前/盤後即時報價（美股才有意義；台股沒有盤前盤後交易，欄位會是 None）。
+    marketState 常見值：PRE（盤前）, REGULAR（盤中）, POST/POSTPOST（盤後）, CLOSED（已收盤）。
+    """
+    symbol = normalize_ticker(ticker)
+    info = yf.Ticker(symbol).info
+
+    return {
+        "market_state": info.get("marketState"),
+        "regular_price": info.get("regularMarketPrice"),
+        "pre_price": info.get("preMarketPrice"),
+        "pre_change": info.get("preMarketChange"),
+        "pre_change_percent": info.get("preMarketChangePercent"),
+        "post_price": info.get("postMarketPrice"),
+        "post_change": info.get("postMarketChange"),
+        "post_change_percent": info.get("postMarketChangePercent"),
+    }
+
+
 def get_quarterly_revenue(ticker: str) -> pd.DataFrame:
     """取得近幾季的營收資料。"""
     symbol = normalize_ticker(ticker)
